@@ -39,6 +39,60 @@ Full history: [Release Notes](https://coplaydev.github.io/unity-mcp/releases).
 
 ---
 
+> **Fork notice.** This is a personal fork of [CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp)
+> by [Seungpyo1007](https://github.com/Seungpyo1007). All credit for MCP for Unity goes to the original authors and
+> contributors. The fork adds one feature — the **Blender Bridge** described below — and otherwise tracks upstream
+> `beta`. For the canonical project, docs and support, use the upstream repo.
+
+## What's different in this fork
+
+Upstream ships an informational "Blender → Unity Handoff" row and expects an AI client to orchestrate
+[BlenderMCP](https://github.com/ahujasid/blender-mcp) and MCP for Unity separately, step by step. This fork lets the
+**Unity Editor talk to the BlenderMCP addon socket directly**, so a Blender → Unity handoff is a single call and works
+even without an AI client attached.
+
+| | Upstream | This fork |
+|---|---|---|
+| Blender → Unity handoff | `blender-to-unity` skill: the AI exports via BlenderMCP, then imports via `import_model_file`, then places and rescales (6 manual steps) | `blender_bridge` tool, action `import_model`: export → import → place → normalize in one call |
+| Blender settings in the Unity UI | Blender app detection only | **Generative tab → Blender Bridge** panel: addon socket host/port + Test Connection, blender-mcp checkout, Blender addons folder, Sync Addon / Check Updates / Import Selection |
+| Keeping the Blender addon current | — | `check_updates` (git fetch of your blender-mcp checkout, behind/ahead per remote, addon md5 compare) and `sync_addon` (copy `addon.py` into Blender, with backup) |
+| Editor menu | — | `Window → MCP for Unity → Blender Bridge` (Import Selection, Import Whole Scene, Viewport Screenshot, Settings) |
+| CLI | — | `unity-mcp blender status / scene-info / object-info / screenshot / run-python / import-model / check-updates / sync-addon` |
+
+### `blender_bridge` actions
+
+| Action | What it does |
+|---|---|
+| `status` | Blender reachable? checkout configured? installed addon in sync with the checkout? |
+| `scene_info`, `object_info` | Read Blender's scene / one object |
+| `screenshot` | Viewport → PNG under `Library/BlenderBridge` (or under `Assets/` with `output_folder`) |
+| `run_python` | Execute Python inside Blender, return stdout |
+| `import_model` | Export `object_names` (children included) / `selection_only` / whole scene as **GLB** (keeps PBR, emission, animation) or FBX, import through the shared model pipeline, place at `position`, scale so the largest dimension is `target_size` meters |
+| `check_updates` | `git fetch` the blender-mcp checkout, report commits behind `upstream`/`origin`, compare addon md5 |
+| `sync_addon` | Copy the checkout's `addon.py` into Blender's addons folder (backs up the old file) |
+
+Requirements: Blender running with the BlenderMCP addon connected (N panel → *Connect to MCP server*, default socket
+`127.0.0.1:9876`); GLB import needs the glTFast package. The tool lives in the `asset_gen` group.
+
+### Installing the fork
+
+1. Unity → Package Manager → Add from git URL:
+   `https://github.com/Seungpyo1007/unity-mcp.git?path=/MCPForUnity#feat/blender-bridge`
+2. Point your MCP client at the fork's server instead of the PyPI package, e.g. in `.mcp.json`:
+   ```json
+   "args": ["--from", "git+https://github.com/Seungpyo1007/unity-mcp.git@feat/blender-bridge#subdirectory=Server",
+            "mcp-for-unity", "--transport", "stdio"]
+   ```
+   (or set *Advanced → Server Source* in the MCP for Unity window and re-run *Configure*). The tool is built into the
+   package, so it only appears when the fork's server is running.
+3. On Windows, `git config --global core.longpaths true` — the git checkout otherwise fails on upstream's long test paths.
+4. `Window → MCP for Unity → Generative → Blender Bridge`: set the blender-mcp checkout (optional; enables Sync Addon /
+   Check Updates), press *Test Connection*.
+
+Everything below this line is the upstream README.
+
+---
+
 ## What it does
 
 Control the Unity Editor in natural language from any MCP client — create scenes & GameObjects, edit C# scripts, manage assets, run tests, profile, and build. 47 focused MCP tool entrypoints, any client, free & MIT.
