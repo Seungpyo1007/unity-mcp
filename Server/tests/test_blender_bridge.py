@@ -156,6 +156,36 @@ class TestBlenderCli:
         assert result.exit_code == 0, result.output
         assert mock_run.call_args.args[1] == {"action": "setup_bloom"}
 
+    def test_read_only_commands(self, cli_runner):
+        for args, expected in (
+            (["scene-info"], {"action": "scene_info"}),
+            (["object-info", "--object-name", "Cube"], {"action": "object_info", "objectName": "Cube"}),
+            (["check-updates"], {"action": "check_updates"}),
+            (["screenshot"], {"action": "screenshot"}),
+            (["screenshot", "--max-size", "400", "--output-folder", "Assets/Shots"],
+             {"action": "screenshot", "maxSize": 400, "outputFolder": "Assets/Shots"}),
+        ):
+            result, mock_run = cli_runner(args)
+            assert result.exit_code == 0, result.output
+            assert mock_run.call_args.args[0] == COMMAND
+            assert mock_run.call_args.args[1] == expected
+
+    def test_run_python_from_inline_code_and_from_file(self, cli_runner, tmp_path):
+        result, mock_run = cli_runner(["run-python", "--code", "print(1)"])
+        assert result.exit_code == 0, result.output
+        assert mock_run.call_args.args[1] == {"action": "run_python", "code": "print(1)"}
+
+        script = tmp_path / "snippet.py"
+        script.write_text("print(2)", encoding="utf-8")
+        result, mock_run = cli_runner(["run-python", "--file", str(script)])
+        assert result.exit_code == 0, result.output
+        assert mock_run.call_args.args[1] == {"action": "run_python", "code": "print(2)"}
+
+    def test_sync_addon_without_force_omits_the_flag(self, cli_runner):
+        result, mock_run = cli_runner(["sync-addon"])
+        assert result.exit_code == 0, result.output
+        assert mock_run.call_args.args[1] == {"action": "sync_addon"}
+
     def test_run_python_requires_code_or_file(self, cli_runner):
         result, mock_run = cli_runner(["run-python"])
         assert result.exit_code != 0
