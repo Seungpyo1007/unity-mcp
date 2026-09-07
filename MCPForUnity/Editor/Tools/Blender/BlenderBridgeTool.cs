@@ -388,8 +388,11 @@ else:
 print(json.dumps({'path': out, 'bytes': os.path.getsize(out), 'selection_only': use_sel,
                   'exported': [o.name for o in (bpy.context.selected_objects if use_sel else bpy.context.scene.objects)]}))
 ";
-            int at = template.IndexOf("__CFG__", StringComparison.Ordinal);
-            return template.Substring(0, at) + configLiteral + template.Substring(at + "__CFG__".Length);
+            // Verbatim strings take the checkout's line endings; normalize so the script (and tests) are
+            // byte-identical whether the file was checked out with LF or CRLF.
+            string body = template.Replace("\r\n", "\n");
+            int at = body.IndexOf("__CFG__", StringComparison.Ordinal);
+            return body.Substring(0, at) + configLiteral + body.Substring(at + "__CFG__".Length);
         }
 
         // ---------------------------------------------------------- finishing touches
