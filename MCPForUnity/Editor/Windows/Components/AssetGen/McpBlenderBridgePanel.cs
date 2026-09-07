@@ -22,7 +22,7 @@ namespace MCPForUnity.Editor.Windows.Components.AssetGen
     public class McpBlenderBridgePanel
     {
         private TextField hostField;
-        private IntegerField portField;
+        private TextField portField;
         private Button testButton;
         private TextField forkField;
         private Button forkSelectButton;
@@ -54,7 +54,7 @@ namespace MCPForUnity.Editor.Windows.Components.AssetGen
         private void CacheUIElements()
         {
             hostField = Root.Q<TextField>("blender-host");
-            portField = Root.Q<IntegerField>("blender-port");
+            portField = Root.Q<TextField>("blender-port");
             testButton = Root.Q<Button>("blender-test-button");
             forkField = Root.Q<TextField>("blender-fork-path");
             forkSelectButton = Root.Q<Button>("blender-fork-select-button");
@@ -99,10 +99,13 @@ namespace MCPForUnity.Editor.Windows.Components.AssetGen
                 SetConnectionStatus(null, "Unknown — press Test Connection");
             });
 
-            portField?.RegisterValueChangedCallback(evt =>
+            // A TextField rather than IntegerField: the latter is editor-only (UnityEditor.UIElements) on the
+            // 2021.3 floor and lives in UnityEngine.UIElements from 2022.1, so a plain text field is the one
+            // control that resolves identically across the supported range.
+            portField?.RegisterCallback<FocusOutEvent>(_ =>
             {
-                BlenderBridgePrefs.Port = evt.newValue;
-                portField.SetValueWithoutNotify(BlenderBridgePrefs.Port);
+                if (int.TryParse(portField.text?.Trim(), out int port)) BlenderBridgePrefs.Port = port;
+                portField.SetValueWithoutNotify(BlenderBridgePrefs.Port.ToString());
                 SetConnectionStatus(null, "Unknown — press Test Connection");
             });
 
@@ -133,7 +136,7 @@ namespace MCPForUnity.Editor.Windows.Components.AssetGen
         private void SyncFromPrefs()
         {
             hostField?.SetValueWithoutNotify(BlenderBridgePrefs.Host);
-            portField?.SetValueWithoutNotify(BlenderBridgePrefs.Port);
+            portField?.SetValueWithoutNotify(BlenderBridgePrefs.Port.ToString());
             forkField?.SetValueWithoutNotify(BlenderBridgePrefs.ForkPath);
             addonsField?.SetValueWithoutNotify(BlenderBridgePrefs.AddonsDirOverride);
 
