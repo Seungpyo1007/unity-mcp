@@ -10,6 +10,7 @@ using MCPForUnity.Editor.Helpers;
 using MCPForUnity.Editor.Security;
 using MCPForUnity.Editor.Services.Blender;
 using MCPForUnity.Editor.Tools.AssetGen;
+using MCPForUnity.Runtime.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -504,7 +505,7 @@ print(json.dumps({'path': out, 'bytes': os.path.getsize(out), 'selection_only': 
             System.Reflection.PropertyInfo isGlobal = volumeType.GetProperty("isGlobal");
             System.Reflection.FieldInfo sharedProfile = volumeType.GetField("sharedProfile");
             Component globalVolume = null;
-            foreach (UnityEngine.Object v in UnityEngine.Object.FindObjectsByType(volumeType, FindObjectsSortMode.None))
+            foreach (UnityEngine.Object v in UnityFindObjectsCompat.FindAll(volumeType))
             {
                 var comp = v as Component;
                 if (comp == null || (isGlobal != null && !(bool)isGlobal.GetValue(comp))) continue;
